@@ -1,0 +1,53 @@
+services:
+  broker:
+    image: redis:7.4-alpine
+    networks:
+      - app_net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
+
+  controller:
+    build: ./controller
+    image: fileproc-controller:1.0
+    environment:
+      REDIS_HOST: broker
+    volumes:
+      - shared_data:/data
+      - ./inbox:/inbox:ro
+    depends_on:
+      - broker
+    networks:
+      - app_net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
+
+  worker:
+    build: ./worker
+    image: fileproc-worker:1.0
+    environment:
+      REDIS_HOST: broker
+    volumes:
+      - shared_data:/data
+    depends_on:
+      - broker
+    networks:
+      - app_net
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
+
+volumes:
+  shared_data:
+
+networks:
+  app_net:
+    driver: bridge
